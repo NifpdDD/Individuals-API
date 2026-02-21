@@ -1,0 +1,30 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://${keycloak.host}/realms/${keycloak.realm}/protocol/openid-connect/certs
+      client:
+        registration:
+          keycloak:
+            client-id: ${keycloak.client-id}
+            client-secret: ${keycloak.client-secret}
+            authorization-grant-type: authorization_code
+            scope:
+              - openid
+              - profile
+              - email
+  application:
+    name: Individuals-API
+  docker:
+    compose:
+          file: individuals-api/docker-compose.yaml
+server:
+  port: 8081
+keycloak:
+  client-id: individuals-api
+  host: localhost:8080
+  token-endpoint-url: /realms/${keycloak.realm}/protocol/openid-connect/token
+  base-url: http://localhost:8080
+  realm: my-realm
+
