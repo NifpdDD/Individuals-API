@@ -27,4 +27,5 @@ keycloak:
   token-endpoint-url: /realms/${keycloak.realm}/protocol/openid-connect/token
   base-url: http://localhost:8080
   realm: my-realm
-
+  admin-email: admin@mail.ru
+  admin-password: 1234

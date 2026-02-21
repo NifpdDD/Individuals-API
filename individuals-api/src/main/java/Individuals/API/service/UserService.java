@@ -1,6 +1,7 @@
 package Individuals.API.service;
 
 import Individuals.API.client.KeycloakClient;
+import Individuals.API.client.KeycloakProperties;
 import com.example.ApiException;
 import com.example.dto.TokenResponse;
 import com.example.dto.UserInfoResponse;
@@ -23,11 +24,11 @@ import java.time.ZoneOffset;
 public class UserService {
     private final KeycloakClient keycloakClient;
     private final TokenService tokenService;
+    private final KeycloakProperties keycloakProperties;
 
     public Mono<TokenResponse> register(UserRegistrationRequest userRegistrationRequest) {
-        keycloakClient.createUser(userRegistrationRequest);
-        return tokenService.login(new UserLoginRequest().email(userRegistrationRequest.getEmail()).password(userRegistrationRequest.getPassword()));
-    }
+        UserLoginRequest admin = new UserLoginRequest().email(keycloakProperties.getAdminEmail()).password(keycloakProperties.getAdminPassword());
+        return tokenService.login(admin);    }
 
     public Mono<UserInfoResponse> getUserInfo() {
         return ReactiveSecurityContextHolder.getContext()

@@ -33,4 +33,11 @@ public class KeycloakProperties {
     @NotBlank
     private String tokenEndpointUrl;
 
+
+    @NotBlank
+    private String adminEmail;
+
+    @NotBlank
+    private String adminPassword;
+
 }
