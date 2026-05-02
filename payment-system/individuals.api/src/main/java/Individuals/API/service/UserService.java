@@ -2,11 +2,12 @@ package Individuals.API.service;
 
 import Individuals.API.client.KeycloakClient;
 import Individuals.API.client.KeycloakProperties;
-import com.example.ApiException;
-import com.example.dto.TokenResponse;
-import com.example.dto.UserInfoResponse;
-import com.example.dto.UserLoginRequest;
-import com.example.dto.UserRegistrationRequest;
+import Individuals.API.exception.keycloak.UnauthorizedException;
+import Individuals.API.exception.keycloak.UserNotFoundException;
+import individuals.api.individuals.dto.TokenResponse;
+import individuals.api.individuals.dto.UserInfoResponse;
+import individuals.api.individuals.dto.UserLoginRequest;
+import individuals.api.individuals.dto.UserRegistrationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -24,17 +25,25 @@ import java.time.ZoneOffset;
 public class UserService {
     private final KeycloakClient keycloakClient;
     private final TokenService tokenService;
-    private final KeycloakProperties keycloakProperties;
+    private final AdminTokenProvider adminTokenProvider;
 
-    public Mono<TokenResponse> register(UserRegistrationRequest userRegistrationRequest) {
-        UserLoginRequest admin = new UserLoginRequest().email(keycloakProperties.getAdminEmail()).password(keycloakProperties.getAdminPassword());
-        return tokenService.login(admin);    }
+    public Mono<TokenResponse> register(UserRegistrationRequest userRegistrationRequest)  {
+       return adminTokenProvider.getAdminToken()
+                .flatMap(token ->
+                        keycloakClient.createUser(userRegistrationRequest, token)
+                                .then(tokenService.login(new UserLoginRequest()
+                                        .email(userRegistrationRequest.getEmail())
+                                        .password(userRegistrationRequest.getPassword())))
+                ).doOnNext(x-> log.info("User[email={}] was successfully registered", userRegistrationRequest.getEmail()));
+    }
+
 
     public Mono<UserInfoResponse> getUserInfo() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .flatMap(UserService::getUserInfoResponseMono)
-                .switchIfEmpty(Mono.error(new ApiException("No authentication present")));
+                .switchIfEmpty(Mono.error(new UnauthorizedException("No authentication present")))
+                .doOnError(x-> log.error("Can not get current user info", x));
     }
 
     private static Mono<UserInfoResponse> getUserInfoResponseMono(Authentication authentication) {
@@ -52,8 +61,7 @@ public class UserService {
             return Mono.just(userInfoResponse);
         }
 
-        log.error("Can not get current user info: Invalid principal");
-        return Mono.error(new ApiException("Can not get current user info: Invalid principal"));
+        return Mono.error(new UnauthorizedException("Can not get current user info: Invalid principal"));
     }
 
 

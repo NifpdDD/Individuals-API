@@ -18,14 +18,20 @@ spring:
     name: Individuals-API
   docker:
     compose:
-          file: individuals-api/docker-compose.yaml
+      file: infra/docker-compose.yaml
+      enabled: false
 server:
   port: 8081
 keycloak:
   client-id: individuals-api
   host: localhost:8080
-  token-endpoint-url: /realms/${keycloak.realm}/protocol/openid-connect/token
+  token-endpoint-url: /realms/my-realm/protocol/openid-connect/token
   base-url: http://localhost:8080
   realm: my-realm
   admin-email: admin@mail.ru
   admin-password: 1234
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
