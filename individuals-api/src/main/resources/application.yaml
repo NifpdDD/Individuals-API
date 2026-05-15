@@ -1,0 +1,66 @@
+keycloak:
+  server-url: ${KEYCLOAK_URL:http://localhost:8080}
+  realm-url: /admin/realms/${keycloak.realm}/users
+  client-id: individuals-api
+  token-endpoint-url: /realms/${keycloak.realm}/protocol/openid-connect/token
+  realm: my-realm
+  admin-email: admin
+  admin-password: admin
+  admin-clientId: admin-cli
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${keycloak.server-url}/realms/${keycloak.realm}/protocol/openid-connect/certs
+      client:
+        registration:
+          keycloak:
+            client-id: ${keycloak.client-id}
+            client-secret: ${keycloak.client-secret}
+            authorization-grant-type: authorization_code
+            scope:
+              - openid
+              - profile
+              - email
+  application:
+    name: Individuals-API
+  docker:
+    compose:
+      file: infra/docker-compose.yaml
+      enabled: false
+server:
+  port: 8081
+
+logging:
+  config: "classpath:logback.xml"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      access: read_only
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+
+otel:
+  exporter:
+    otlp:
+      endpoint:
+        ${OTLP_EXPORTER_ENDPOINT:http://localhost:4318}
+      protocol: http/protobuf
+  logs:
+    exporter: none
+  metrics:
+    exporter: none
+
