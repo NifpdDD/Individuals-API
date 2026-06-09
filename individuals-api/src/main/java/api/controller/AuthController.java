@@ -1,6 +1,6 @@
 package api.controller;
 
-import api.exception.keycloak.ValidationEcxeption;
+import api.exception.ValidationEcxeption;
 import api.service.TokenService;
 import api.service.UserService;
 
@@ -30,7 +30,7 @@ public class AuthController  {
     }
 
     @PostMapping("/register")
-    public Mono<ResponseEntity<TokenResponse>> register(@Valid @RequestBody Mono<UserRegistrationRequest> body) {
+    public Mono<ResponseEntity<TokenResponse>> register(@Valid @RequestBody Mono<IndividualWriteDto> body) {
         return body.flatMap(requestBody->{if (!requestBody.getPassword().equals(requestBody.getConfirmPassword())) {
             return Mono.error(new ValidationEcxeption("Пароли не совпадают"));
         }

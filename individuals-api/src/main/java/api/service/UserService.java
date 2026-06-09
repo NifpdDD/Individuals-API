@@ -1,11 +1,11 @@
 package api.service;
 
 import api.client.KeycloakClient;
-import api.exception.keycloak.UnauthorizedException;
+import api.exception.UnauthorizedException;
+import individuals.api.individuals.dto.IndividualWriteDto;
 import individuals.api.individuals.dto.TokenResponse;
 import individuals.api.individuals.dto.UserInfoResponse;
 import individuals.api.individuals.dto.UserLoginRequest;
-import individuals.api.individuals.dto.UserRegistrationRequest;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.time.ZoneOffset;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -25,16 +26,18 @@ public class UserService {
     private final KeycloakClient keycloakClient;
     private final TokenService tokenService;
     private final AdminTokenProvider adminTokenProvider;
+    private final PersonService personService;
 
     @WithSpan("personService.register")
-    public Mono<TokenResponse> register(UserRegistrationRequest userRegistrationRequest) {
-        return adminTokenProvider.getAdminToken()
+    public Mono<TokenResponse> register(IndividualWriteDto userRegistrationRequest) {
+        return personService.createPerson(userRegistrationRequest).flatMap(person -> adminTokenProvider.getAdminToken()
                 .flatMap(token ->
                         keycloakClient.createUser(userRegistrationRequest, token)
                                 .then(tokenService.login(new UserLoginRequest()
                                         .email(userRegistrationRequest.getEmail())
                                         .password(userRegistrationRequest.getPassword())))
-                ).doOnNext(x -> log.info("User[email={}] was successfully registered", userRegistrationRequest.getEmail()));
+                ).onErrorResume(error->personService.completeRegistration(person.getId()).then(Mono.error(error)))
+        ).doOnNext(_ -> log.info("User[email={}] was successfully registered", userRegistrationRequest.getEmail()));
     }
 
     @WithSpan("personService.getUserInfo")

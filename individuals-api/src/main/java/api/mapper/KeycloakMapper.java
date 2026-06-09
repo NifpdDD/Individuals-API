@@ -1,6 +1,6 @@
 package api.mapper;
 
-import individuals.api.individuals.dto.UserRegistrationRequest;
+import individuals.api.individuals.dto.IndividualWriteDto;
 import individuals.api.keycloak.dto.CreateUserRequest;
 import individuals.api.keycloak.dto.Credential;
 import org.mapstruct.BeanMapping;
@@ -22,9 +22,9 @@ public interface KeycloakMapper {
     @Mapping(target = "enabled", constant = "true")
     @Mapping(target = "emailVerified", constant = "false")
     @Mapping(target = "credentials", expression = "java(buildCredentials(request))")
-    CreateUserRequest toCreateUserRequest(UserRegistrationRequest request);
+    CreateUserRequest toCreateUserRequest(IndividualWriteDto request);
 
-    default List<Credential> buildCredentials(UserRegistrationRequest request) {
+    default List<Credential> buildCredentials(IndividualWriteDto request) {
         Credential credential = new Credential();
         credential.setTemporary(false);
         credential.setType(Credential.TypeEnum.PASSWORD);

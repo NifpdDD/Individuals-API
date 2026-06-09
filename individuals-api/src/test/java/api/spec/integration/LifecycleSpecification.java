@@ -1,9 +1,8 @@
 package api.spec.integration;
 
-import api.IndividualsApiApplication;
-import api.testcontainer.config.AppTestConfig;
 import api.testcontainer.container.Containers;
 import api.testcontainer.container.KeycloakTestContainer;
+import api.testcontainer.container.WireMockTestContainer;
 import api.testcontainer.data.DtoCreator;
 import api.testcontainer.service.IndividualApiTestService;
 import api.testcontainer.service.KeycloakApiTestService;
@@ -37,6 +36,9 @@ public abstract class LifecycleSpecification {
         final String kcBase = "http://" +
                 KeycloakTestContainer.keycloakTestContainer.getHost() + ":" +
                 KeycloakTestContainer.keycloakTestContainer.getFirstMappedPort();
+        final String wireMockBase = "http://" +
+                WireMockTestContainer.wireMockContainer.getHost() + ":" +
+                WireMockTestContainer.wireMockContainer.getFirstMappedPort();
 
         r.add("keycloak.server-url", () -> kcBase);
         r.add("keycloak.realm", () -> "my-realm");
@@ -47,6 +49,7 @@ public abstract class LifecycleSpecification {
 
         r.add("spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
                 () -> kcBase + "/realms/my-realm/protocol/openid-connect/certs");
+        r.add("person.url", () -> wireMockBase);
     }
 
 

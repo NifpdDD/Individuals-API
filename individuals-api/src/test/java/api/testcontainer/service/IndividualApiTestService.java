@@ -1,9 +1,9 @@
 package api.testcontainer.service;
 
+import individuals.api.individuals.dto.IndividualWriteDto;
 import individuals.api.individuals.dto.TokenResponse;
 import individuals.api.individuals.dto.UserInfoResponse;
 import individuals.api.individuals.dto.UserLoginRequest;
-import individuals.api.individuals.dto.UserRegistrationRequest;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -30,7 +30,7 @@ public class IndividualApiTestService {
         return "http://localhost:" + port + "/api/v1/auth";
     }
 
-    public TokenResponse register(UserRegistrationRequest request) {
+    public TokenResponse register(IndividualWriteDto request) {
         return restTemplate.postForObject(baseUrl() + "/register", request, TokenResponse.class);
     }
 

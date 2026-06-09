@@ -1,12 +1,12 @@
 package api.client;
 
 
-import api.exception.keycloak.UnauthorizedException;
-import api.exception.keycloak.UserAlreadyExistsException;
+import api.exception.UnauthorizedException;
+import api.exception.UserAlreadyExistsException;
 import api.mapper.KeycloakMapper;
+import individuals.api.individuals.dto.IndividualWriteDto;
 import individuals.api.individuals.dto.TokenResponse;
 import individuals.api.individuals.dto.UserLoginRequest;
-import individuals.api.individuals.dto.UserRegistrationRequest;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -73,10 +73,10 @@ public class KeycloakClient {
     }
 
     @WithSpan("keycloakClient.createUser")
-    public Mono<Void> createUser(UserRegistrationRequest userRegistrationRequest, TokenResponse accessToken) {
+    public Mono<Void> createUser(IndividualWriteDto userRegistrationRequest, TokenResponse accessToken) {
         var body = keycloakMapper.toCreateUserRequest(userRegistrationRequest);
         return webClient.post()
-                .uri(keycloakProperties.getRealmUrl())
+                .uri(keycloakProperties.getCreateUserUrl())
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken.getAccessToken())
                 .bodyValue(body)

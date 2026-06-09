@@ -1,6 +1,6 @@
 keycloak:
   server-url: ${KEYCLOAK_URL:http://localhost:8080}
-  realm-url: /admin/realms/${keycloak.realm}/users
+  create-user-url: /admin/realms/${keycloak.realm}/users
   client-id: individuals-api
   token-endpoint-url: /realms/${keycloak.realm}/protocol/openid-connect/token
   realm: my-realm
@@ -30,6 +30,8 @@ spring:
     compose:
       file: infra/docker-compose.yaml
       enabled: false
+  main:
+    banner-mode: off
 server:
   port: 8081
 
@@ -63,4 +65,13 @@ otel:
     exporter: none
   metrics:
     exporter: none
+
+admin:
+  name: keycloak-admin-client
+  contextId: keycloakAdminContext
+  url: http://localhost:8081 # Укажите реальный URL вашего Keycloak
+
+person:
+  name: ${PERSONS_API_NAME:person}
+  url: ${PERSONS_API_URL:http://localhost:8092}
 

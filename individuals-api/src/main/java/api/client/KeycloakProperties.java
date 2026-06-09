@@ -33,7 +33,7 @@ public class KeycloakProperties {
     private String tokenEndpointUrl;
 
     @NotBlank
-    private String realmUrl;
+    private String createUserUrl;
 
 
     @NotBlank

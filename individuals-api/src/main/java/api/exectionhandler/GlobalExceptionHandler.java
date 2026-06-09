@@ -1,6 +1,6 @@
-package api.exception;
+package api.exectionhandler;
 
-import api.exception.keycloak.KeyCloakApiException;
+import api.exception.BusinessException;
 import individuals.api.individuals.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -39,8 +39,8 @@ public class GlobalExceptionHandler {
         });
     }
 
-    @ExceptionHandler(KeyCloakApiException.class)
-    public Mono<ResponseEntity<ErrorResponse>> handleApiExection(KeyCloakApiException ex) {
+    @ExceptionHandler(BusinessException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleApiExection(BusinessException ex) {
         log.error("Keycloak API Error: Status [{}], Message [{}]",
                 ex.getStatusCode(), ex.getMessage());
 

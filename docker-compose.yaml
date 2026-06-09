@@ -23,6 +23,45 @@ services:
       timeout: 5s
       retries: 10
 
+  person-postgres:
+    image: postgres:17
+    container_name: person-postgres
+    environment:
+      POSTGRES_DB: person
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./infra/database/person:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  person-postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: person-postgres-exporter
+    depends_on:
+      person-postgres:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_NAME: postgresql://postgres:postgres@person-postgres:5432/person?sslmode=disable
+    ports:
+        - "9188:9187"
+
+  keycloak-postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: keycloak-postgres-exporter
+    depends_on:
+      person-postgres:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_NAME: postgresql://keycloak:keycloak@keycloack-postgres:5432/keycloak?sslmode=disable
+    ports:
+      - "9189:9187"
+
   keycloak-postgres:
     image: postgres:17
     container_name: keycloak-postgres
@@ -38,6 +77,21 @@ services:
       timeout: 5s
       retries: 5
 
+  nexus:
+    image: sonatype/nexus3:3.76.0
+    container_name: nexus
+    ports:
+      - "8081:8081"
+    environment:
+      NEXUS_SECURITY_RANDOMPASSWORD: false
+      NEXUS_SECURITY_INITIAL_PASSWORD: admin
+    volumes:
+      - nexus-data:/nexus-data
+    healthcheck:
+      test: ["CMD-SHELL", "curl", "-f", "http://localhost:8081/service/rest/v1/status"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
 
   api:
     build:
@@ -45,9 +99,11 @@ services:
       dockerfile: Dockerfile
     container_name: api
     depends_on:
-      keycloak:
+      persons-api:
         condition: service_healthy
     environment:
+      PERSONS_API_HOST: persons-api
+      PERSONS_API_URL: http://persons-api:8089
       KEYCLOAK_URL: http://keycloak:8080
       SPRING_PROFILES_ACTIVE: docker
       OTLP_EXPORTER_ENDPOINT: http://tempo:4318
@@ -55,6 +111,29 @@ services:
       - "8091:8081"
     healthcheck:
       test: [ "CMD-SHELL", "curl -fsS http://localhost:8091/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  persons-api:
+    build:
+      context: ./person-service
+      dockerfile: Dockerfile
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+    container_name: person-service
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      OTLP_EXPORTER_ENDPOINT: http://tempo:4318
+      POSTGRES_HOST: person-postgres
+      POSTGRES_PORT: 5432
+    ports:
+      - "8092:8089"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8089/actuator/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -96,12 +175,16 @@ services:
         condition: service_healthy
       loki:
         condition: service_healthy
+      alloy:
+        condition: service_started
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_METRICS_ENABLED: true
     volumes:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning
       - ./infra/grafana/dashboards:/var/lib/grafana/dashboards
+      - nexus-data:/nexus-data
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:3000/api/health"]
       interval: 10s
