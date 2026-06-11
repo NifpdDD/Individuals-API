@@ -12,6 +12,8 @@ services:
       KC_DB_PASSWORD: keycloak
       KC_METRICS_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
     volumes:
       - ./infra/keycloak/realm-config.json:/opt/keycloak/data/import/realm-config.json
     depends_on:
@@ -31,7 +33,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - ./infra/database/person:/docker-entrypoint-initdb.d:ro
+      - ./infra/databases/person:/docker-entrypoint-initdb.d:ro
     ports:
       - "5432:5432"
     healthcheck:
@@ -110,7 +112,7 @@ services:
     ports:
       - "8091:8081"
     healthcheck:
-      test: [ "CMD-SHELL", "curl -fsS http://localhost:8091/actuator/health || exit 1" ]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10

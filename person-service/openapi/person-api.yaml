@@ -177,6 +177,14 @@ components:
         address:
           $ref: '#/components/schemas/AddressWriteDto'
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        status:
+          type: integer
+
     AddressWriteDto:
       type: object
       required: [ ]

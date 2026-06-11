@@ -33,6 +33,8 @@ spring:
           hbm2ddl:
             auto: validate
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  main:
+    banner-mode: off
 server:
   port: 8089
 

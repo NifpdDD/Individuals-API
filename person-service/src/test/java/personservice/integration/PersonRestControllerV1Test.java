@@ -2,7 +2,7 @@ package personservice.integration;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import personservice.exception.BaseExeption;
+import personservice.exception.NotFoundException;
 
 public class PersonRestControllerV1Test extends LifecycleSpecification{
 
@@ -45,7 +45,7 @@ public class PersonRestControllerV1Test extends LifecycleSpecification{
         var request = dtoCreator.buildNewIndividualWriteDto();
         var answerCreate =personTestService.createIndividual(request);
         personTestService.compensateRegistrationIndividual(answerCreate.getId());
-        Assertions.assertThrows(BaseExeption.class, () -> personTestService.findRowById(answerCreate.getId()));
+        Assertions.assertThrows(NotFoundException.class, () -> personTestService.findRowById(answerCreate.getId()));
     }
 
 

@@ -169,6 +169,8 @@ components:
         created_at:
           type: string
           format: date-time
+        person_uuid:
+          type: string
 
     ErrorResponse:
       type: object

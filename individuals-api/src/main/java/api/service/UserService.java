@@ -28,11 +28,11 @@ public class UserService {
     private final AdminTokenProvider adminTokenProvider;
     private final PersonService personService;
 
-    @WithSpan("personService.register")
+    @WithSpan("userService.registration")
     public Mono<TokenResponse> register(IndividualWriteDto userRegistrationRequest) {
         return personService.createPerson(userRegistrationRequest).flatMap(person -> adminTokenProvider.getAdminToken()
                 .flatMap(token ->
-                        keycloakClient.createUser(userRegistrationRequest, token)
+                        keycloakClient.createUser(userRegistrationRequest, token, person.getId())
                                 .then(tokenService.login(new UserLoginRequest()
                                         .email(userRegistrationRequest.getEmail())
                                         .password(userRegistrationRequest.getPassword())))
@@ -40,7 +40,7 @@ public class UserService {
         ).doOnNext(_ -> log.info("User[email={}] was successfully registered", userRegistrationRequest.getEmail()));
     }
 
-    @WithSpan("personService.getUserInfo")
+    @WithSpan("userService.getUserInfo")
     public Mono<UserInfoResponse> getUserInfo() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
@@ -55,6 +55,7 @@ public class UserService {
             userInfoResponse.setId(jwt.getSubject());
             userInfoResponse.setEmail(jwt.getClaimAsString("email"));
             userInfoResponse.setRoles(jwt.getClaimAsStringList("roles"));
+            userInfoResponse.setPersonUuid(jwt.getClaimAsString("person-uuid"));
 
             if (jwt.getIssuedAt() != null) {
                 userInfoResponse.setCreatedAt(jwt.getIssuedAt().atOffset(ZoneOffset.UTC));

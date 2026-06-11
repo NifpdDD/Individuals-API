@@ -336,6 +336,13 @@ components:
         emailVerified:
           type: boolean
           default: false
+        attributes:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Произвольные атрибуты пользователя (мульти-значные)
         credentials:
           type: array
           minItems: 1

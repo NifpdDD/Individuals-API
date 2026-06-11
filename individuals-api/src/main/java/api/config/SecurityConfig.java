@@ -30,12 +30,12 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "api/v1/auth/register",
-                                "api/v1/auth/login",
-                                "api/v1/auth/refresh"
+                                "/v1/auth/registration",
+                                "/v1/auth/login",
+                                "/v1/auth/refresh-token"
                         ).permitAll()
                         //USER
-                        .pathMatchers("api/v1/auth/me").hasAuthority("ROLE_individual.user")
+                        .pathMatchers("/v1/auth/me").hasAuthority("ROLE_individual.user")
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

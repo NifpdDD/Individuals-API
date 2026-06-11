@@ -29,6 +29,7 @@ public abstract class UserMapper {
     @Mapping(target = "active", constant = "true")
     @Mapping(target = "created", expression = "java(dateTimeUtil.now())")
     @Mapping(target = "updated", expression = "java(dateTimeUtil.now())")
+    @Mapping(target = "email", source = "email")
     @Mapping(target = "address", source = ".", qualifiedByName = "toAddress")
     public abstract User to(IndividualWriteDto dto);
 
@@ -36,6 +37,7 @@ public abstract class UserMapper {
     @Mapping(target = "updated", expression = "java(dateTimeUtil.now())")
     @Mapping(target = "firstName", source = "firstName")
     @Mapping(target = "lastName", source = "lastName")
+    @Mapping(target = "email", source = "email")
     @Mapping(target = "address", expression = "java(addressMapper.update(user, dto))")
     public abstract User update(
             @MappingTarget

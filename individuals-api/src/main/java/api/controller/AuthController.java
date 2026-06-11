@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
 
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/v1/auth")
 @RequiredArgsConstructor
 @Validated
 public class AuthController  {
@@ -29,7 +29,7 @@ public class AuthController  {
         return body.flatMap(tokenService::login).map(ResponseEntity::ok);
     }
 
-    @PostMapping("/register")
+    @PostMapping("/registration")
     public Mono<ResponseEntity<TokenResponse>> register(@Valid @RequestBody Mono<IndividualWriteDto> body) {
         return body.flatMap(requestBody->{if (!requestBody.getPassword().equals(requestBody.getConfirmPassword())) {
             return Mono.error(new ValidationEcxeption("Пароли не совпадают"));
@@ -38,7 +38,7 @@ public class AuthController  {
         }).map(x->ResponseEntity.status(HttpStatus.CREATED).body(x));
     }
 
-    @PostMapping("/refresh")
+    @PostMapping("/refresh-token")
     public Mono<ResponseEntity<TokenResponse>> refresh(@Valid @RequestBody Mono<TokenRefreshRequest> body) {
         return body.flatMap(tokenService::refresh).map(ResponseEntity::ok);
     }

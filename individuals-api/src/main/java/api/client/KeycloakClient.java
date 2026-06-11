@@ -18,6 +18,8 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 @Component
 @Slf4j
 public class KeycloakClient {
@@ -73,8 +75,8 @@ public class KeycloakClient {
     }
 
     @WithSpan("keycloakClient.createUser")
-    public Mono<Void> createUser(IndividualWriteDto userRegistrationRequest, TokenResponse accessToken) {
-        var body = keycloakMapper.toCreateUserRequest(userRegistrationRequest);
+    public Mono<Void> createUser(IndividualWriteDto userRegistrationRequest, TokenResponse accessToken, UUID personId) {
+        var body = keycloakMapper.toCreateUserRequest(userRegistrationRequest, personId);
         return webClient.post()
                 .uri(keycloakProperties.getCreateUserUrl())
                 .contentType(MediaType.APPLICATION_JSON)
