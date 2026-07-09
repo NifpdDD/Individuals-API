@@ -1,0 +1,178 @@
+@startuml
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
+skinparam RoundCorner 5
+skinparam SequenceGroupBodyBackgroundColor transparent
+skinparam SequenceGroupBackgroundColor #F4F4F4
+skinparam SequenceGroupHeaderBackgroundColor #EAEAEA
+
+actor "Клиент" as Client
+participant "Individuals API" as IndividualsAPI
+participant "Transaction Service" as TransactionService
+database "Transaction Table (DB)" as TransactionDB
+
+== 1. Внутренний перевод: Инициализация ==
+
+Client -> IndividualsAPI : 1 POST /transactions/transfer/init
+activate IndividualsAPI
+note over Client
+  {
+    "userID": 1000,
+    "fromWallet": "RUB",
+    "toWallet": "USD",
+    "amount": 500,
+    "currency": "RUB"
+  }
+end note
+
+IndividualsAPI -> TransactionService : 2 Проверка кошельков и расчёт условий
+activate TransactionService
+note over TransactionService
+  **Проверка исходного и целевого кошельков:**
+  SELECT w.uid, w.balance, wt.currency_code
+  FROM wallets w
+  JOIN wallet_types wt ON w.wallet_type_uid = wt.uid
+  WHERE w.uid IN (:fromWallet, :toWallet)
+    AND w.user_uid = :userID
+    AND w.status = 'ACTIVE'
+    AND w.archived_at IS NULL
+    AND wt.status = 'ACTIVE'
+    AND wt.archived_at IS NULL;
+
+  -- Проверка достаточности баланса на исходном кошельке
+  -- Расчёт комиссии (если применимо)
+end note
+
+alt #E2F0D9 Успешная проверка
+    TransactionService --> IndividualsAPI : 3 Комиссия, токен операции
+    deactivate TransactionService
+
+    IndividualsAPI --> Client : 4 Параметры и ID транзакции
+    deactivate IndividualsAPI
+    note left
+      {
+        "token": "XYZTOKEN",
+        "fee": 10.0
+      }
+    end note
+
+else #FCE4D6 Ошибка (кошелёк недоступен / недостаточно средств)
+    activate TransactionService #Pink
+    TransactionService --> IndividualsAPI : 3a Ошибка (недостаточно средств или кошелёк недоступен)
+    deactivate TransactionService
+    activate IndividualsAPI
+
+    IndividualsAPI --> Client : 4a HTTP 400 / 403 (Операция отклонена)
+    deactivate IndividualsAPI
+end
+
+== 2. Внутренний перевод: Подтверждение ==
+
+Client -> IndividualsAPI : 5 POST /transactions/{transactionId}/confirm
+activate IndividualsAPI
+note left
+  {
+    "token": "XYZTOKEN"
+  }
+end note
+
+IndividualsAPI -> TransactionService : 6 Валидация токена и повторная проверка кошельков
+activate TransactionService
+
+alt #E2F0D9 Токен валиден
+    activate TransactionDB
+    alt #E2F0D9 Кошельки активны и баланс подтвержден
+        note over TransactionDB
+          **BEGIN TRANSACTION;**
+
+          -- 2. Проверка статуса 'ACTIVE' и достаточности баланса на исходном кошельке
+          -- (Выполняется через SELECT FOR UPDATE для блокировки строк во избежание Race Condition)
+          SELECT uid, balance, status FROM wallets
+          WHERE uid IN (:fromWallet, :toWallet) FOR UPDATE;
+
+          -- 3. Списание с исходного кошелька
+          UPDATE wallets
+          SET balance = balance - :amount - :fee, modified_at = now()
+          WHERE uid = :fromWallet;
+
+          -- 4. Начисление на целевой кошелек
+          UPDATE wallets
+          SET balance = balance + :amount, modified_at = now()
+          WHERE uid = :toWallet;
+
+          -- 5. Запись транзакции списания
+          INSERT INTO transactions
+          (uid, created_at, user_uid, wallet_uid, amount, type, status,
+           comment, fee, target_wallet_uid)
+          VALUES
+          (uuid_generate_v4(), now(), :userID, :fromWallet, :amount, 'TRANSFER', 'COMPLETED',
+           'Internal transfer (Debit)', :fee, :toWallet);
+
+          **COMMIT;**
+        end note
+
+        TransactionDB --> TransactionService : Успешно
+        TransactionService --> IndividualsAPI : 8 HTTP 200 (Status: COMPLETED, transactionId: 456)
+        IndividualsAPI --> Client : 9 Ответ: COMPLETED, ID: 456
+
+    else #FCE4D6 НЕГАТИВНЫЙ СЦЕНАРИЙ: Кошелек заблокирован или недостаточно средств
+        note over TransactionDB
+
+          **BEGIN TRANSACTION;**
+          -- 1. Проверка провалена: один из кошельков имеет статус != 'ACTIVE'
+          -- (или у :fromWallet balance < :amount + :fee)
+
+          -- 2. Запись неудачной транзакции для кошелька-отправителя
+          INSERT INTO transactions
+          (user_uid, wallet_uid, amount, type, status, comment, failure_reason, target_wallet_uid)
+          VALUES
+          (:userID, :fromWallet, :amount, 'TRANSFER', 'FAILED',
+           'Internal transfer (Debit)', 'Rejected: Wallet is blocked or insufficient funds',:toWallet);
+          **COMMIT;**
+        end note
+
+        TransactionDB --> TransactionService : Запись об ошибке сохранена
+        deactivate TransactionDB
+
+        TransactionService --> IndividualsAPI : 8a HTTP 422 (Status: FAILED, Reason: Wallet Blocked)
+        activate TransactionService #Pink
+        deactivate TransactionService
+
+        IndividualsAPI --> Client : 9a Ответ: FAILED (Операция отклонена, кошелек заблокирован)
+    end
+
+else #FCE4D6 Токен невалиден / истек
+    activate TransactionService #Pink
+    TransactionService --> IndividualsAPI : 6a Токен недействителен
+    deactivate TransactionService
+
+    IndividualsAPI --> Client : 6b HTTP 400 Bad Request
+    deactivate IndividualsAPI
+end
+
+== 3. Проверка статуса ==
+
+Client -> IndividualsAPI: 13 GET /transactions/{transactionId}/status
+activate IndividualsAPI
+
+IndividualsAPI -> TransactionService : 14 Запрос статуса
+activate TransactionService
+
+alt #E2F0D9 Транзакция завершена успешно
+    TransactionService --> IndividualsAPI : HTTP 200 (Status: COMPLETED)
+    activate TransactionService #LightGreen
+    deactivate TransactionService
+
+    IndividualsAPI --> Client: Ответ: COMPLETED
+
+else #FCE4D6 Транзакция отклонена (заблокирована) или не найдена
+    TransactionService --> IndividualsAPI : HTTP 200 (Status: FAILED)
+    activate TransactionService #Pink
+    deactivate TransactionService
+
+    IndividualsAPI --> Client: Ответ: FAILED (Причина: Кошелек заблокирован)
+end
+
+deactivate TransactionService
+deactivate IndividualsAPI
+@enduml
