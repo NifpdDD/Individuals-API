@@ -10,9 +10,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 import personservice.entity.Individual;
-import personservice.exception.BaseExeption;
+import personservice.exception.NotFoundException;
 import personservice.repository.IndividualRepository;
 
 import java.util.HashMap;
@@ -66,7 +65,7 @@ public class PersonTestService {
     }
 
     public Individual findRowById(String individualId) {
-        return individualRepository.findById(UUID.fromString(individualId)).orElseThrow(() -> new BaseExeption(String.format("Individual with id %s not found", individualId)));
+        return individualRepository.findById(UUID.fromString(individualId)).orElseThrow(() -> new NotFoundException(String.format("Individual with id %s not found", individualId)));
     }
 
 

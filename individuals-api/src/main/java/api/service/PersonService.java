@@ -4,6 +4,7 @@ import api.mapper.PersonMapper;
 import com.example.person.api.PersonApiClient;
 import individuals.api.individuals.dto.IndividualWriteDto;
 import individuals.api.individuals.dto.IndividualWriteResponseDto;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -20,7 +21,7 @@ public class PersonService {
     private final PersonMapper personMapper;
     private final PersonApiClient personApiClient;
 
-    @WithSpan("personService.register")
+    @WithSpan("personService.registration")
     public Mono<IndividualWriteResponseDto> createPerson(IndividualWriteDto individual) {
         return Mono.fromCallable(() -> personApiClient.registration(personMapper.from(individual)))
                 .mapNotNull(HttpEntity::getBody)

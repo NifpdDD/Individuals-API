@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import personservice.entity.Address;
 import personservice.entity.Country;
 import personservice.entity.User;
-import personservice.exception.BaseExeption;
+import personservice.exception.NotFoundException;
 import personservice.repository.CountryRepository;
 import personservice.util.DateTimeUtil;
 
@@ -55,7 +55,7 @@ public abstract class AddressMapper {
     @Named("toCountry")
     public Country toCountry(String countryCode) {
         return countryRepository.findByCode(countryCode)
-                .orElseThrow(() -> new BaseExeption("Unknow country code: [%s]", countryCode));
+                .orElseThrow(() -> new NotFoundException( String.format("Unknown country code: [%s]", countryCode)));
     }
 
     public Address update(User user, IndividualWriteDto dto) {

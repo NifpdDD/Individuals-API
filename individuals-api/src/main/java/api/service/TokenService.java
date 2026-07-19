@@ -37,7 +37,7 @@ public class TokenService {
                 });
     }
 
-    @WithSpan("tokenService.refresh")
+    @WithSpan("tokenService.refresh-token")
     public Mono<TokenResponse> refresh(TokenRefreshRequest refreshRequest) {
         return keycloakClient.refreshToken(refreshRequest.getRefreshToken());
     }

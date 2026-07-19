@@ -33,7 +33,7 @@ spring:
   main:
     banner-mode: off
 server:
-  port: 8081
+  port: 8091
 
 logging:
   config: "classpath:logback.xml"
@@ -74,4 +74,5 @@ admin:
 person:
   name: ${PERSONS_API_NAME:person}
   url: ${PERSONS_API_URL:http://localhost:8092}
+
 

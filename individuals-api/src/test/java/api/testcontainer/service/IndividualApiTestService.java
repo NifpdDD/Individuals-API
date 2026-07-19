@@ -27,11 +27,11 @@ public class IndividualApiTestService {
         if (port == null || port == 0) {
             port = env.getProperty("server.port", Integer.class, 8080);
         }
-        return "http://localhost:" + port + "/api/v1/auth";
+        return "http://localhost:" + port + "/v1/auth";
     }
 
     public TokenResponse register(IndividualWriteDto request) {
-        return restTemplate.postForObject(baseUrl() + "/register", request, TokenResponse.class);
+        return restTemplate.postForObject(baseUrl() + "/registration", request, TokenResponse.class);
     }
 
     public TokenResponse login(UserLoginRequest request) {
