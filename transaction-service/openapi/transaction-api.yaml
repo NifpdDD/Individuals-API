@@ -1,0 +1,288 @@
+openapi: 3.0.0
+info:
+  title: Transactions API
+  description: REST API для взаимодействия с Transaction сервисом
+  version: 1.0.0
+servers:
+  - url: http://localhost:8083
+
+paths:
+  /api/v1/wallets:
+    post:
+      summary: Создание нового кошелька для пользователя
+      operationId: "registration"
+      tags:
+        - Wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WalletWriteDto'
+      responses:
+        '201':
+          description: Успешное создание кошелька
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletWriteResponseDto'
+
+  /api/v1/wallets/{id}:
+    get:
+      summary: Просмотр информации о кошельке
+      operationId: "findById"
+      tags:
+        - Wallet
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Успешно найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletDto'
+
+  /api/v1/transactions/{type}/init:
+    post:
+      summary: Расчёт условий операции
+      operationId: "initTransaction"
+      tags:
+        - Transaction
+      parameters:
+        - in: path
+          name: type
+          required: true
+          description: "Тип финансовой операции"
+          schema:
+            type: string
+            enum: [ deposit, withdrawal, transfer ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/DepositInitDto'
+                - $ref: '#/components/schemas/WithdrawalInitDto'
+                - $ref: '#/components/schemas/TransferInitDto'
+      responses:
+        '200':
+          description: Успешный расчет условий
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitResponseDto'
+
+  /api/v1/transactions/{type}/confirm:
+    post:
+      summary: Выполнение условий операции
+      operationId: "confirmOperation"
+      tags:
+        - Transaction
+      parameters:
+        - in: path
+          name: type
+          required: true
+          description: "Тип финансовой операции"
+          schema:
+            type: string
+            enum: [ deposit,withdraw ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitResponseDto'
+      responses:
+        '200':
+          description: Успешный расчет условий
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionConfirmResponse'
+
+components:
+  schemas:
+    InitTransactionRequest:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: "Тип транзакции: deposit, withdrawal, transfer"
+
+      discriminator:
+        propertyName: type
+        mapping:
+          deposit: '#/components/schemas/DepositInitDto'
+          withdrawal: '#/components/schemas/WithdrawalInitDto'
+          transfer: '#/components/schemas/TransferInitDto'
+
+      # Явно указываем список всех возможных вариантов
+      oneOf:
+        - $ref: '#/components/schemas/DepositInitDto'
+        - $ref: '#/components/schemas/WithdrawalInitDto'
+        - $ref: '#/components/schemas/TransferInitDto'
+
+    TransactionConfirmResponse:
+      type: object
+      required:
+        - transaction_id
+        - status
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+          description: "Идентификатор созданной транзакции в системе"
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        status:
+          type: string
+
+    InitResponseDto:
+      type: object
+      required:
+        - token
+        - fee
+      properties:
+        token:
+          type: string
+          description: "Уникальный токен сессии операции для последующей авторизации/подтверждения"
+          example: "tkn_8f3b2c9a1d4e6f7g8h9i0j"
+        fee:
+          type: string
+          format: decimal
+          description: "Рассчитанная комиссия за проведение операции"
+          example: "15.00"
+
+    DepositInitDto:
+      type: object
+      required:
+        - wallet_uuid
+        - amount
+        - currency
+        - user_uuid
+      properties:
+        user_uuid:
+          type: string
+          format: uuid
+        wallet_uuid:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+
+    WithdrawalInitDto:
+      type: object
+      required:
+        - wallet_uuid
+        - amount
+        - currency
+        - user_uuid
+      properties:
+        wallet_uuid:
+          type: string
+          format: uuid
+        user_uuid:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+
+    TransferInitDto:
+      type: object
+      required:
+        - from_wallet_uuid
+        - amount
+        - to_wallet_uuid
+        - currency
+        - from_user_uuid
+        - to_user_uuid
+      properties:
+        from_user_uuid:
+          type: string
+          format: uuid
+        to_user_uuid:
+          type: string
+          format: uuid
+        wallet_uuid:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        recipient_wallet_uuid:
+          type: string
+          format: uuid
+
+    WalletWriteDto:
+      type: object
+      required:
+        - name
+        - wallet_type_uuid
+        - user_uuid
+      properties:
+        name:
+          type: string
+          maxLength: 32
+        wallet_type_uuid:
+          type: string
+          format: uuid
+        user_uuid:
+          type: string
+          format: uuid
+
+    WalletWriteResponseDto:
+      type: object
+      required:
+        - uuid
+      properties:
+        uuid:
+          type: string
+          format: uuid
+
+    WalletDto:
+      type: object
+      required:
+        - uuid
+        - name
+        - wallet_type_uuid
+        - user_uuid
+        - status
+        - balance
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 32
+        wallet_type_uuid:
+          type: string
+          format: uuid
+        user_uuid:
+          type: string
+          format: uuid
+        status:
+          type: string
+          maxLength: 30
+        balance:
+          type: number
+          format: decimal
