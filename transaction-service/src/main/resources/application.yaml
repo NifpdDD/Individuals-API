@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: transaction-service
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: false
+  datasource:
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    sharding-config-path: shardingsphere.yaml
+    url: jdbc:shardingsphere:classpath:shardingsphere.yaml
+logging:
+  level:
+    org.apache.shardingsphere: DEBUG
+    org.springframework.boot.context: DEBUG
+    com.zaxxer.hikari: DEBUG
