@@ -4,8 +4,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(HttpStatus.BAD_REQUEST)
-public class NotSupportedType extends RuntimeException {
-    public NotSupportedType(String message) {
+public class NotSupportedTypeException extends RuntimeException {
+
+    public NotSupportedTypeException(String message) {
         super(message);
     }
+
 }

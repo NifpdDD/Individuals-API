@@ -39,3 +39,4 @@ rules:
   - !BROADCAST
     tables:
       - wallet_types
+      - outbox_events

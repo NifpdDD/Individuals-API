@@ -1,18 +1,70 @@
 spring:
+  kafka:
+    bootstrap-servers: localhost:9095
+    consumer:
+      group-id: transaction-processor-group-v2-final
+      auto-offset-reset: earliest
+      enable-auto-commit: true
+
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        request.timeout.ms: 30000
+        acks: "all"
+        enable.idempotence: true
+        batch.size: 65536
+        linger.ms: 10
+
   application:
     name: transaction-service
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: validate
-  flyway:
-    enabled: false
   datasource:
     driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
     sharding-config-path: shardingsphere.yaml
     url: jdbc:shardingsphere:classpath:shardingsphere.yaml
 logging:
-  level:
-    org.apache.shardingsphere: DEBUG
-    org.springframework.boot.context: DEBUG
-    com.zaxxer.hikari: DEBUG
+  format:
+    json:
+      enabled: true
+  pattern:
+    dateformat: "yyyy-MM-dd'T'HH:mm:ss.SSSX"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      access: read_only
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      enabled: true
+
+otel:
+  exporter:
+    otlp:
+      endpoint: ${OTLP_EXPORTER_ENDPOINT:http://localhost:4318}
+      protocol: http/protobuf
+  logs:
+    exporter: none
+  metrics:
+    exporter: none

@@ -24,6 +24,7 @@ public abstract class WalletMapper {
     @Mapping(target = "status", expression = "java(WalletStatus.ACTIVE)")
     @Mapping(target = "balance", expression = "java(BigDecimal.ZERO)")
     @Mapping(target = "archivedAt", ignore = true)
+    @Mapping(target = "walletType", ignore = true )
     @Mapping(target = "uuid", expression = "java(UUID.randomUUID())")
     public abstract Wallet to(WalletWriteDto dto);
 

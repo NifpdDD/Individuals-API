@@ -2,8 +2,7 @@ package transaction_service.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import transaction_service.entity.enums.PaymentType;
 import transaction_service.entity.enums.TransactionStatus;
@@ -16,6 +15,9 @@ import java.util.UUID;
 @Table(name = "transactions", schema = "transactions")
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Transaction {
 
     @Id
@@ -33,13 +35,12 @@ public class Transaction {
     private Instant modifiedAt;
 
     @NotNull
-    @Column(name = "user_uuid", nullable = false)
+    @Column(name = "user_uuid", nullable = false, updatable = false)
     private UUID userUuid;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "wallet_uuid", nullable = false)
-    private Wallet wallet;
+    @Column(name = "wallet_uuid", nullable = false)
+    private UUID walletUuid;
 
     @NotNull
     @Column(name = "amount", nullable = false)
@@ -59,11 +60,11 @@ public class Transaction {
     private String comment;
 
     @NotNull
-    @Column(name = "fee", nullable = false)
+    @Column(name = "fee", nullable = true) // исправить
     private BigDecimal fee;
 
-    @Column(name = "target_wallet_uid")
-    private UUID targetWalletUid;
+    @Column(name = "target_wallet_uuid")
+    private UUID targetWalletUuid;
 
     @Column(name = "failure_reason", length = 256)
     private String failureReason;

@@ -67,10 +67,8 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/DepositInitDto'
-                - $ref: '#/components/schemas/WithdrawalInitDto'
-                - $ref: '#/components/schemas/TransferInitDto'
+              type: object
+              additionalProperties: true
       responses:
         '200':
           description: Успешный расчет условий
@@ -79,7 +77,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/InitResponseDto'
 
-  /api/v1/transactions/{type}/confirm:
+  /api/v1/transactions/{transactionId}/confirm:
     post:
       summary: Выполнение условий операции
       operationId: "confirmOperation"
@@ -87,18 +85,18 @@ paths:
         - Transaction
       parameters:
         - in: path
-          name: type
+          name: transactionId
           required: true
-          description: "Тип финансовой операции"
+          description: "Уникальный идентификатор созданной транзакции"
           schema:
             type: string
-            enum: [ deposit,withdraw ]
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InitResponseDto'
+              $ref: '#/components/schemas/TransactionConfirmRequestDto'
       responses:
         '200':
           description: Успешный расчет условий
@@ -109,28 +107,6 @@ paths:
 
 components:
   schemas:
-    InitTransactionRequest:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          type: string
-          description: "Тип транзакции: deposit, withdrawal, transfer"
-
-      discriminator:
-        propertyName: type
-        mapping:
-          deposit: '#/components/schemas/DepositInitDto'
-          withdrawal: '#/components/schemas/WithdrawalInitDto'
-          transfer: '#/components/schemas/TransferInitDto'
-
-      # Явно указываем список всех возможных вариантов
-      oneOf:
-        - $ref: '#/components/schemas/DepositInitDto'
-        - $ref: '#/components/schemas/WithdrawalInitDto'
-        - $ref: '#/components/schemas/TransferInitDto'
-
     TransactionConfirmResponse:
       type: object
       required:
@@ -144,13 +120,34 @@ components:
           example: "123e4567-e89b-12d3-a456-426614174000"
         status:
           type: string
+        error:
+          x-field-extra-annotation: "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)"
+          type: string
+          description: "Текст ошибки в случае неудачного выполнения операции"
+          example: "Insufficient funds in wallet for withdrawal"
+
+    TransactionConfirmRequestDto:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: "Уникальный токен сессии операции из InitResponseDto, используемый для авторизации и подтверждения"
+          example: "tkn_8f3b2c9a1d4e6f7g8h9i0j"
 
     InitResponseDto:
       type: object
       required:
+        - transactionId
         - token
         - fee
       properties:
+        transactionId:
+          type: string
+          format: uuid
+          description: "Уникальный идентификатор созданной транзакции"
+          example: "123e4567-e89b-12d3-a456-426614174000"
         token:
           type: string
           description: "Уникальный токен сессии операции для последующей авторизации/подтверждения"
@@ -219,7 +216,7 @@ components:
         to_user_uuid:
           type: string
           format: uuid
-        wallet_uuid:
+        from_wallet_uuid:
           type: string
           format: uuid
         amount:
@@ -228,7 +225,7 @@ components:
         currency:
           type: string
           pattern: '^[A-Z]{3}$'
-        recipient_wallet_uuid:
+        to_wallet_uuid:
           type: string
           format: uuid
 

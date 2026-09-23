@@ -30,9 +30,7 @@ java {
 
 dependencyManagement {
 	imports {
-		// Рекомендуется проверять совместимость Spring Cloud под релиз Spring Boot 4
 		mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.1.2")
-		mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.15.0")
 	}
 }
 
@@ -45,6 +43,14 @@ configurations.all {
 }
 
 dependencies {
+	implementation("net.logstash.logback:logstash-logback-encoder:9.0")
+
+
+	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+
+	// MESSAGING & INTEGRATION (Spring Kafka)
+	implementation("org.springframework.boot:spring-boot-starter-kafka")
+
 	//SECURITY
 	implementation ("io.jsonwebtoken:jjwt-api:0.12.5")
 	runtimeOnly ("io.jsonwebtoken:jjwt-impl:0.12.5")
@@ -63,7 +69,8 @@ dependencies {
 	implementation("org.springframework.cloud:spring-cloud-starter-openfeign:${versions["springCloudStarterOpenfeign"]}")
 
 	// OBSERVABILITY (Отрегулировано под Spring Boot 4 OTLP спецификации)
-	implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
+	implementation("io.micrometer:micrometer-registry-otlp") // Взамен spring-boot-starter-opentelemetry для МЕТРИК
+	implementation("io.micrometer:micrometer-tracing-bridge-otel") // Для генерации и передачи ТРЕЙСОВ
 	runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 	implementation("io.github.openfeign:feign-micrometer:${versions["feignMicrometerVersion"]}")
 
@@ -118,18 +125,6 @@ foundSpecifications.forEach { specFile ->
 		inputSpec.set(specFile.absolutePath)
 		outputDir.set(ourDir)
 
-		typeMappings.set(
-			mapOf(
-				"InitTransactionRequest" to "InitTransactionRequest"
-			)
-		)
-		
-		importMappings.set(
-			mapOf(
-				"InitTransactionRequest" to "com.example.transaction.dto.InitTransactionRequest"
-			)
-		)
-
 		configOptions.set(
 			mapOf(
 				"library" to "spring-cloud",
@@ -142,7 +137,8 @@ foundSpecifications.forEach { specFile ->
 				"modelPackage" to "${basePackage}.dto",
 				"configPackage" to "${basePackage}.config",
 				"useJakartaEe" to "true",
-				"jacksonWithJsonProvider" to "true"
+				"jacksonWithJsonProvider" to "true",
+				"interfaceOnly" to "false"
 			)
 		)
 

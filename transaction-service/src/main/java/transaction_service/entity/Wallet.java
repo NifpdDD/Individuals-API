@@ -43,7 +43,7 @@ public class Wallet {
     private WalletType walletType;
 
     @NotNull
-    @Column(name = "user_uuid", nullable = false)
+    @Column(name = "user_uuid", nullable = false, updatable = false)
     private UUID userUuid; //Надо ли проверять что юзер существует через сервис персон?
 
     @NotNull

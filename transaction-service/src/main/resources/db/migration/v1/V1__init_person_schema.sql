@@ -1,4 +1,3 @@
-CREATE TYPE transactions.payment_type AS ENUM ('DEPOSIT', 'WITHDRAWAL', 'TRANSFER');
 
 CREATE TABLE transactions.wallet_types (
                                      uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -21,7 +20,7 @@ CREATE TABLE transactions.wallets (
                                 wallet_type_uuid UUID NOT NULL REFERENCES transactions.wallet_types (uuid),
                                 user_uuid UUID NOT NULL,
                                 status VARCHAR(30) NOT NULL,
-                                balance DECIMAL NOT NULL DEFAULT 0.0,
+                                balance DECIMAL(19, 4) NOT NULL DEFAULT 0.0,
                                 archived_at TIMESTAMP
 );
 
@@ -31,11 +30,11 @@ CREATE TABLE transactions.transactions (
                                      modified_at TIMESTAMP,
                                      user_uuid UUID NOT NULL,
                                      wallet_uuid UUID NOT NULL REFERENCES transactions.wallets (uuid),
-                                     amount DECIMAL NOT NULL DEFAULT 0.0,
-                                     type transactions.payment_type NOT NULL,
+                                     amount DECIMAL(19, 4) NOT NULL DEFAULT 0.0,
+                                     type VARCHAR(30) NOT NULL,
                                      status VARCHAR(32) NOT NULL,
                                      comment VARCHAR(256),
-                                     fee DECIMAL NOT NULL ,
-                                     target_wallet_uid UUID,
+                                     fee DECIMAL(19, 4) NOT NULL ,
+                                     target_wallet_uuid UUID,
                                      failure_reason VARCHAR(256)
 );
