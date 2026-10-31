@@ -1,11 +1,11 @@
 package transaction_service.entity;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import transaction_service.dto.TransactionEventDto;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -25,8 +25,12 @@ public class OutboxEvent {
     private UUID uuid;
 
     @NotNull
-    @Column(name = "aggregate_id", nullable = false)
-    private UUID aggregateId;
+    @Column(name = "user_uuid", nullable = false)
+    private UUID userId;
+
+    @NotNull
+    @Column(name = "transaction_id", nullable = false)
+    private UUID transactionId;
 
     @NotNull
     @Column(name = "topic", nullable = false, length = 128)
@@ -34,8 +38,8 @@ public class OutboxEvent {
 
     @NotNull
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "payload", nullable = false)
-    private JsonNode payload;
+    @Column(name = "payload", nullable = false,columnDefinition = "jsonb")
+    private String payload;
 
     @NotNull
     @Column(name = "created_at", nullable = false)
@@ -44,4 +48,8 @@ public class OutboxEvent {
     @NotNull
     @Column(name = "processed", nullable = false)
     private boolean processed = false;
+
+    @NotNull
+    @Column(name = "trace_id", nullable = false, length = 64) // 64 символа с запасом хватит и для W3C стандартов, и для B3
+    private String traceId;
 }

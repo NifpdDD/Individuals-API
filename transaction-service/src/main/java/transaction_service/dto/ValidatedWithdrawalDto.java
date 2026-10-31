@@ -1,18 +1,17 @@
-package transaction_service.model;
+package transaction_service.dto;
 
 import transaction_service.entity.enums.TransactionType;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public record ValidatedTransferDto(
+public record ValidatedWithdrawalDto(
     TransactionType type,
-    UUID fromUserUuid,
-    UUID toUserUuid,
-    UUID fromWalletUuid,
-    UUID toWalletUuid,
-    BigDecimal amount,
-    String currency
+    UUID walletUuid, 
+    BigDecimal amount, 
+    String currency,
+    UUID userUuid,
+    BigDecimal fee
 ) implements ValidatedTransaction {
     @Override
     public TransactionType getType() { return type; }

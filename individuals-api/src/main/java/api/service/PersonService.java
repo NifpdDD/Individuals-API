@@ -4,6 +4,7 @@ import api.mapper.PersonMapper;
 import com.example.person.api.PersonApiClient;
 import individuals.api.individuals.dto.IndividualWriteDto;
 import individuals.api.individuals.dto.IndividualWriteResponseDto;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;

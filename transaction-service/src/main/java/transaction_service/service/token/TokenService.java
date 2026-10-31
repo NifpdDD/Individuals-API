@@ -1,4 +1,4 @@
-package transaction_service.service;
+package transaction_service.service.token;
 
 import com.example.transaction.dto.DepositInitDto;
 import com.example.transaction.dto.TransferInitDto;
@@ -7,11 +7,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import transaction_service.entity.enums.TransactionType;
-import transaction_service.model.*;
+import transaction_service.dto.*;
 import transaction_service.util.DateTimeUtil;
 
 import javax.crypto.SecretKey;
@@ -34,6 +33,10 @@ public class TokenService {
     private static final String CLAIM_AMOUNT = "amount";
     private static final String CLAIM_CURRENCY = "currency";
     private static final String CLAIM_FEE = "fee";
+    private static final String CLAIM_FROM_USER_UUID = "from_user_uuid";
+    private static final String CLAIM_TO_USER_UUID = "to_user_uuid";
+    private static final String CLAIM_FROM_WALLET_UUID = "from_wallet_uuid";
+    private static final String CLAIM_TO_WALLET_UUID = "to_wallet_uuid";
 
     private static final String SUB_DEPOSIT = "deposit_validation";
     private static final String SUB_WITHDRAWAL = "withdrawal_validation";
@@ -51,7 +54,7 @@ public class TokenService {
     public String generateTransactionTokenForDeposit(DepositInitDto dto, BigDecimal commission, UUID transactionId) {
         return buildBaseToken(SUB_DEPOSIT, transactionId, dto.getAmount(), dto.getCurrency())
                 .claim(CLAIM_WALLET_UUID, dto.getWalletUuid().toString())
-                .claim(CLAIM_USER_UUID, dto.getWalletUuid().toString())
+                .claim(CLAIM_USER_UUID, dto.getUserUuid().toString())
                 .claim(CLAIM_FEE, commission.toPlainString())
                 .compact();
     }
@@ -59,17 +62,17 @@ public class TokenService {
     public String generateTransactionTokenForWithdrawal(WithdrawalInitDto dto, BigDecimal commission, UUID transactionId) {
         return buildBaseToken(SUB_WITHDRAWAL, transactionId, dto.getAmount(), dto.getCurrency())
                 .claim(CLAIM_WALLET_UUID, dto.getWalletUuid().toString())
-                .claim(CLAIM_USER_UUID, dto.getWalletUuid().toString()) // Исправлен NPE из старой версии
+                .claim(CLAIM_USER_UUID, dto.getUserUuid().toString()) // Исправлен NPE из старой версии
                 .claim(CLAIM_FEE, commission.toPlainString())
                 .compact();
     }
 
     public String generateTransactionTokenForTransfer(TransferInitDto dto, UUID transactionId) {
         return buildBaseToken(SUB_TRANSFER, transactionId, dto.getAmount(), dto.getCurrency())
-                .claim("from_user_uuid", dto.getFromUserUuid().toString())
-                .claim("to_user_uuid", dto.getToUserUuid().toString())
-                .claim("from_wallet_uuid", dto.getFromWalletUuid().toString())
-                .claim("to_wallet_uuid", dto.getToWalletUuid().toString())
+                .claim(CLAIM_FROM_USER_UUID, dto.getFromUserUuid().toString())
+                .claim(CLAIM_TO_USER_UUID, dto.getToUserUuid().toString())
+                .claim(CLAIM_FROM_WALLET_UUID, dto.getFromWalletUuid().toString())
+                .claim(CLAIM_TO_WALLET_UUID, dto.getToWalletUuid().toString())
                 .compact();
     }
 

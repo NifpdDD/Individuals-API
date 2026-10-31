@@ -1,4 +1,4 @@
-package transaction_service.model;
+package transaction_service.dto;
 
 
 import transaction_service.entity.enums.TransactionType;

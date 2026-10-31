@@ -1,13 +1,16 @@
 package transaction_service.listener;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import transaction_service.model.TransactionEvent;
-import transaction_service.service.TransactionService;
+import transaction_service.dto.ExternalTransactionResponseDto;
+import transaction_service.dto.TransactionEventDto;
+import transaction_service.service.transaction.TransactionService;
 
 @Slf4j
 @Component
@@ -15,24 +18,16 @@ import transaction_service.service.TransactionService;
 public class TransactionListener {
 
     private final TransactionService transactionService;
-    private final ObjectMapper objectMapper; // Спринг подставит его автоматически
+    private final ObjectMapper objectMapper;
 
     @KafkaListener(
-            topics = "all_transactions_topic_out",
-            containerFactory = "kafkaListenerContainerFactory"// Смените имя группы для сброса зависшего офсета!
+            topics = "${spring.kafka.topics.transactions-out}",
+            containerFactory = "kafkaListenerContainerFactory"
     )
-    public void listen(ConsumerRecord<String, String> record) { // Принимаем String!
-        String rawJson = record.value();
-        if (rawJson == null) return;
-
-        log.info("Сообщение успешно долетело до метода! Ключ: {}", record.key());
-
-        try {
-            // Парсим строку руками
-            TransactionEvent event = objectMapper.readValue(rawJson, TransactionEvent.class);
-            transactionService.processTransactionUpdate(event);
-        } catch (Exception e) {
-            log.error("Ошибка парсинга JSON: {}", e.getMessage());
+    public void listen(ExternalTransactionResponseDto dto) {
+        log.info("Received transaction response for ID: {}", dto.getTransactionId());
+        try (MDC.MDCCloseable ignored = MDC.putCloseable("transactionId", dto.getTransactionId().toString())) {
+            transactionService.processTransactionUpdate(dto);
         }
     }
 }

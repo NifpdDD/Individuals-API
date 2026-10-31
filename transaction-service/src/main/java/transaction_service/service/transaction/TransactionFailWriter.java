@@ -1,4 +1,4 @@
-package transaction_service.service;
+package transaction_service.service.transaction;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -10,7 +10,7 @@ import transaction_service.repository.TransactionRepository;
 
 @Component
 @RequiredArgsConstructor
-public class TransactionWriter {
+class TransactionFailWriter {
 
     private final TransactionRepository transactionRepository;
 

@@ -12,7 +12,7 @@ val versions = mapOf(
 	"logbackClassicVersion" to "1.5.18",
 	"nettyResolverVersion" to "4.1.121.Final:osx-aarch_64",
 	"feignMicrometerVersion" to "13.6",
-	"testContainersVersion" to "1.19.3"
+	"testContainersVersion" to "1.21.4"
 )
 
 dependencyManagement {

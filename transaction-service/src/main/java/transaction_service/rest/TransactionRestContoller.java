@@ -8,13 +8,12 @@ import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import transaction_service.entity.enums.TransactionType;
-import transaction_service.exceptions.NotSupportedTypeException;
-import transaction_service.model.ValidatedDepositDto;
-import transaction_service.model.ValidatedTransferDto;
-import transaction_service.model.ValidatedWithdrawalDto;
-import transaction_service.service.InitService;
-import transaction_service.service.TokenService;
-import transaction_service.service.TransactionService;
+import transaction_service.dto.ValidatedDepositDto;
+import transaction_service.dto.ValidatedTransferDto;
+import transaction_service.dto.ValidatedWithdrawalDto;
+import transaction_service.service.transaction.InitService;
+import transaction_service.service.token.TokenService;
+import transaction_service.service.transaction.TransactionService;
 
 import java.util.Map;
 import java.util.UUID;
@@ -43,15 +42,22 @@ public class TransactionRestContoller implements TransactionApi {
     }
 
     @Override
+    public ResponseEntity<TransactionStatusResponse> getTransactionStatus(UUID transactionId) {
+        return ResponseEntity.ok(transactionService.getStatusById(transactionId));
+    }
+
+    @Override
     public ResponseEntity<InitResponseDto> initTransaction(String type, Map<String, Object> request) {
         TransactionType txType = TransactionType.fromString(type);
         Object dto = objectMapper.convertValue(request, txType.getDtoClass());
-        UUID transactionId = UUID.randomUUID();
+        //вынести на уровень бизнес логики
         InitResponseDto responseDto = switch (txType) {
-            case DEPOSIT -> initService.initDeposit((DepositInitDto) dto, transactionId);
-            case WITHDRAWAL -> initService.initWithdrawal((WithdrawalInitDto) dto, transactionId);
-            case TRANSFER -> initService.initTransfer((TransferInitDto) dto, transactionId);
+            case DEPOSIT -> initService.initDeposit((DepositInitDto) dto);
+            case WITHDRAWAL -> initService.initWithdrawal((WithdrawalInitDto) dto);
+            case TRANSFER -> initService.initTransfer((TransferInitDto) dto);
         };
         return ResponseEntity.ok(responseDto);
     }
+
+
 }

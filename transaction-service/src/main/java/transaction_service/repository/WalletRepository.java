@@ -1,9 +1,11 @@
 package transaction_service.repository;
 
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import transaction_service.entity.Wallet;
@@ -34,6 +36,9 @@ public interface WalletRepository extends JpaRepository<Wallet, UUID> {
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints({
+            @QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000") // 3000 мс = 3 секунды
+    })
     @Query("SELECT w FROM Wallet w WHERE w.uuid = :walletId")
     Optional<Wallet> findByIdForUpdate(@Param("walletId") UUID walletId);
 
