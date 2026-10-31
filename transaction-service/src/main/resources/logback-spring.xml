@@ -7,12 +7,12 @@
 
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
+            <!-- Мы ищем стандартные ключи Micrometer (%X{traceId}), но выводим их в JSON-поле "trace_id" -->
             <pattern>{"timestamp":"%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}", "trace_id": "%X{traceId:-}", "span_id":"%X{spanId:-}", "transaction_id":"%X{transactionId:-}", "level":"%level", "thread":"%thread", "logger":"%logger{36}","message":"%msg"}%n
             </pattern>
         </encoder>
     </appender>
 
-    <!-- Уровень INFO задан через тег level, чтобы убрать ошибку "Attribute level is not allowed here" -->
     <root>
         <level value="INFO"/>
         <appender-ref ref="console"/>

@@ -1,11 +1,20 @@
+
+app:
+  outbox:
+    scheduler-delay-ms: 10000
+    page-size: 100
+
 spring:
   kafka:
+    topics:
+      transactions-in: "transactions_topic_in"
+      transactions-out: "transactions_topic_out"
+      transactions-out-dlq: "transactions_topic_out_DLQ"
     bootstrap-servers: localhost:9095
     consumer:
-      group-id: transaction-processor-group-v2-final
+      group-id: transaction-service-dev
       auto-offset-reset: earliest
-      enable-auto-commit: true
-
+      enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     listener:
@@ -19,6 +28,8 @@ spring:
         enable.idempotence: true
         batch.size: 65536
         linger.ms: 10
+
+
 
   application:
     name: transaction-service
@@ -36,6 +47,12 @@ logging:
       enabled: true
   pattern:
     dateformat: "yyyy-MM-dd'T'HH:mm:ss.SSSX"
+  level:
+    org.springframework.kafka.support.serializer: DEBUG
+    root: INFO
+    transaction_service: INFO
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN       
 
 management:
   endpoints:
@@ -45,24 +62,19 @@ management:
   endpoint:
     prometheus:
       access: read_only
-  prometheus:
-    metrics:
-      export:
-        enabled: true
-  otlp:
-    metrics:
-      export:
-        enabled: false
+
+  # Включаем трассировку на 100%
   tracing:
     sampling:
       probability: 1.0
-    export:
-      enabled: true
+  server:
+    port: 8099
 
 otel:
   exporter:
     otlp:
-      endpoint: ${OTLP_EXPORTER_ENDPOINT:http://localhost:4318}
+      endpoint:
+        ${OTLP_EXPORTER_ENDPOINT:http://localhost:4318}
       protocol: http/protobuf
   logs:
     exporter: none

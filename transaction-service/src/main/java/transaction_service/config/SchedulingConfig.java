@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 @Configuration
-@EnableScheduling // Перенесли аннотацию сюда, теперь из главного класса её можно удалить
+@EnableScheduling
 public class SchedulingConfig {
 
     @Bean

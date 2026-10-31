@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.flyway.autoconfigure.FlywayMigrationInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.env.EnvScalarConstructor;
 
@@ -19,6 +20,7 @@ import java.util.Objects;
 
 @SuppressWarnings("unchecked")
 @Configuration
+@Profile("!test")
 public class FlywayMigrationConfig {
 
     @Value("${spring.datasource.sharding-config-path}")

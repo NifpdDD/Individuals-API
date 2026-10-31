@@ -5,9 +5,9 @@ import org.springframework.stereotype.Component;
 import transaction_service.entity.Transaction;
 import transaction_service.entity.enums.PaymentType;
 import transaction_service.entity.enums.TransactionStatus;
-import transaction_service.model.ValidatedDepositDto;
-import transaction_service.model.ValidatedTransferDto;
-import transaction_service.model.ValidatedWithdrawalDto;
+import transaction_service.dto.ValidatedDepositDto;
+import transaction_service.dto.ValidatedTransferDto;
+import transaction_service.dto.ValidatedWithdrawalDto;
 import transaction_service.util.DateTimeUtil;
 
 import java.math.BigDecimal;

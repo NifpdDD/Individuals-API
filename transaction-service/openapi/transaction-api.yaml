@@ -7,7 +7,7 @@ servers:
   - url: http://localhost:8083
 
 paths:
-  /api/v1/wallets:
+  /v1/wallets:
     post:
       summary: Создание нового кошелька для пользователя
       operationId: "registration"
@@ -27,7 +27,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/WalletWriteResponseDto'
 
-  /api/v1/wallets/{id}:
+  /v1/wallets/{id}:
     get:
       summary: Просмотр информации о кошельке
       operationId: "findById"
@@ -48,7 +48,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/WalletDto'
 
-  /api/v1/transactions/{type}/init:
+  /v1/transactions/{type}/init:
     post:
       summary: Расчёт условий операции
       operationId: "initTransaction"
@@ -77,7 +77,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/InitResponseDto'
 
-  /api/v1/transactions/{transactionId}/confirm:
+  /v1/transactions/{transactionId}/confirm:
     post:
       summary: Выполнение условий операции
       operationId: "confirmOperation"
@@ -104,6 +104,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransactionConfirmResponse'
+
+  /v1/transactions/{transactionId}/status:
+    get:
+      operationId: "getTransactionStatus"
+      tags:
+        - Transaction
+      summary: Получение статуса транзакции
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '200':
+          description: Статус и детали транзакции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionStatusResponse'
 
 components:
   schemas:
@@ -135,6 +156,16 @@ components:
           type: string
           description: "Уникальный токен сессии операции из InitResponseDto, используемый для авторизации и подтверждения"
           example: "tkn_8f3b2c9a1d4e6f7g8h9i0j"
+
+    TransactionStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Текущий статус транзакции
+          example: SUCCESS
+      required:
+        - status
 
     InitResponseDto:
       type: object

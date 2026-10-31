@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import transaction_service.exceptions.NotEnoughMoneyException;
 import transaction_service.exceptions.NotSupportedTypeException;
+import transaction_service.exceptions.TransactionNotFound;
 import transaction_service.exceptions.WalletNotFoundOrBlockedException;
 
 import java.util.stream.Collectors;
@@ -31,6 +32,12 @@ public class GlobalExceptionHandler {
             log.warn("Wallet business error: {}", ex.getMessage());
             return createErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
         }
+    }
+
+    @ExceptionHandler(TransactionNotFound.class)
+    public ResponseEntity<ErrorResponseDto> handleTransactionNotFound(TransactionNotFound ex) {
+        log.warn("Transaction lookup failed: {}", ex.getMessage());
+        return createErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(NotSupportedTypeException.class)

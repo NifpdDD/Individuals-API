@@ -29,6 +29,12 @@ rules:
           standard:
             shardingColumn: user_uuid
             shardingAlgorithmName: uuid_user_inline
+      outbox_events:
+        actualDataNodes: ds_${0..1}.outbox_events
+        databaseStrategy:
+          standard:
+            shardingColumn: user_uuid
+            shardingAlgorithmName: uuid_user_inline
 
     shardingAlgorithms:
       uuid_user_inline:
@@ -39,4 +45,3 @@ rules:
   - !BROADCAST
     tables:
       - wallet_types
-      - outbox_events

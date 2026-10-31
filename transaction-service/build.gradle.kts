@@ -15,7 +15,7 @@ val versions = mapOf(
 	"springdocOpenapiStarterWebmvcUiVersion" to "2.5.0",
 	"feignMicrometerVersion" to "13.6",
 	"springCloudStarterOpenfeign" to "4.1.1",
-	"testContainersVersion" to "1.19.3",
+	"testContainersVersion" to "1.20.6",
 	"shardingsphereVersion" to "5.5.1"
 )
 
@@ -68,9 +68,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.cloud:spring-cloud-starter-openfeign:${versions["springCloudStarterOpenfeign"]}")
 
-	// OBSERVABILITY (Отрегулировано под Spring Boot 4 OTLP спецификации)
-	implementation("io.micrometer:micrometer-registry-otlp") // Взамен spring-boot-starter-opentelemetry для МЕТРИК
-	implementation("io.micrometer:micrometer-tracing-bridge-otel") // Для генерации и передачи ТРЕЙСОВ
+	// Observabilty
+	implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
 	runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 	implementation("io.github.openfeign:feign-micrometer:${versions["feignMicrometerVersion"]}")
 
@@ -89,8 +88,9 @@ dependencies {
 	// TEST SUITE
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
-	testImplementation("org.testcontainers:testcontainers:${versions["testContainersVersion"]}")
-	testImplementation("org.testcontainers:postgresql:${versions["testContainersVersion"]}")
+	testImplementation("org.testcontainers:testcontainers:2.0.3")
+	testImplementation("org.testcontainers:postgresql:1.21.4")
+	testImplementation("org.testcontainers:kafka:1.21.4")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testCompileOnly("org.projectlombok:lombok")
 	testAnnotationProcessor("org.projectlombok:lombok")

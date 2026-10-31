@@ -1,5 +1,5 @@
 
-CREATE TABLE transactions.wallet_types (
+CREATE TABLE IF NOT EXISTS transactions.wallet_types (
                                      uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                                      created_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
                                      modified_at TIMESTAMP,
@@ -12,7 +12,7 @@ CREATE TABLE transactions.wallet_types (
                                      modifier VARCHAR(255)
 );
 
-CREATE TABLE transactions.wallets (
+CREATE TABLE IF NOT EXISTS transactions.wallets (
                                 uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                                 created_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
                                 modified_at TIMESTAMP,
@@ -24,7 +24,7 @@ CREATE TABLE transactions.wallets (
                                 archived_at TIMESTAMP
 );
 
-CREATE TABLE transactions.transactions (
+CREATE TABLE IF NOT EXISTS transactions.transactions (
                                      uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                                      created_at TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
                                      modified_at TIMESTAMP,

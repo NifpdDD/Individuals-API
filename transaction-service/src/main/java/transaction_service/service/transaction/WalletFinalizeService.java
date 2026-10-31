@@ -1,4 +1,4 @@
-package transaction_service.service;
+package transaction_service.service.transaction;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,9 +17,8 @@ public  class WalletFinalizeService {
     /**
      * Возврат заблокированных средств на депозит пользователя (в случае FAILED)
      */
-    @Transactional // Открывает транзакцию БД, которая удерживает блокировку FOR UPDATE
+    @Transactional
     public void refundWithdrawal(UUID walletId, BigDecimal amount) {
-        log.info("Запрос SELECT FOR UPDATE для возврата на кошелек: {}", walletId);
         var wallet = walletRepository.findByIdForUpdate(walletId)
                 .orElseThrow(() -> new IllegalArgumentException("Кошелек не найден: " + walletId));
         var newBalance = wallet.getBalance().add(amount);
@@ -33,10 +32,10 @@ public  class WalletFinalizeService {
      * Окончательное зачисление / пополнение баланса (в случае COMPLETED)
      */
     @Transactional
-    void completeDeposit(UUID walletID,BigDecimal amount){
+    public void completeDeposit(UUID walletID, BigDecimal amount){
         var wallet = walletRepository.findByIdForUpdate(walletID)
                 .orElseThrow(() -> new IllegalArgumentException("Кошелек не найден: " + walletID));
-        var newBalance = wallet.getBalance().subtract(amount);
+        var newBalance = wallet.getBalance().add(amount);
         wallet.setBalance(newBalance);
         walletRepository.save(wallet);
         log.info("Успешное поплнение. Кошелек: {}",

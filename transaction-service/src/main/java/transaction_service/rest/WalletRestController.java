@@ -7,24 +7,24 @@ import com.example.transaction.dto.WalletWriteResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-import transaction_service.service.WalletCreatorService;
+import transaction_service.service.wallet.WalletService;
 
 import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
 public class WalletRestController implements WalletApi {
-    private final WalletCreatorService walletCreatorService;
+    private final WalletService walletService;
 
     @Override
     public ResponseEntity<WalletDto> findById(UUID id) {
-        var wallet = walletCreatorService.getWallet(id);
+        var wallet = walletService.getWalletDTO(id);
         return ResponseEntity.ok(wallet);
     }
 
     @Override
     public ResponseEntity<WalletWriteResponseDto> registration(WalletWriteDto walletWriteDto) {
-        var wallet = walletCreatorService.createWallet(walletWriteDto);
+        var wallet = walletService.createWallet(walletWriteDto);
         return ResponseEntity.ok(wallet);
     }
 }
