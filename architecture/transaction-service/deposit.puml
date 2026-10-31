@@ -1,0 +1,242 @@
+@startuml
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
+
+skinparam RoundCorner 5
+skinparam SequenceGroupBodyBackgroundColor transparent
+skinparam SequenceGroupBackgroundColor #F4F4F4
+skinparam SequenceGroupHeaderBackgroundColor #EAEAEA
+
+actor "Клиент" as Client
+participant "Individuals API" as IndividualsAPI
+participant "Transaction Service" as TransactionService
+database "Transaction Table (DB)" as TransactionDB
+database "Outbox Table (DB)" as OutboxDB
+participant "Outbox Publisher\n(Background Worker)" as OutboxPublisher
+queue "Kafka Topic" as KafkaTopic
+
+== 1. Пополнение (Deposit): Инициализация ==
+
+Client -> IndividualsAPI : 1 POST /transactions/deposit/init
+activate IndividualsAPI
+note over Client
+  {
+    "userID": 1000,
+    "walletID": "RUB",
+    "Sum" : 1000,
+    "currency": "RUB"
+  }
+end note
+
+IndividualsAPI -> TransactionService : 2 Расчет условий и проверка кошелька
+note over TransactionService
+  **Проверка кошелька и валюты в БД:**
+  SELECT w.uid, w.balance
+  FROM wallets w
+  JOIN wallet_types wt ON w.wallet_type_uid = wt.uid
+  WHERE w.uid = :walletID
+    AND w.user_uid = :userID
+    AND w.status = 'ACTIVE'
+    AND w.archived_at IS NULL
+    AND wt.currency_code = :currency
+    AND wt.status = 'ACTIVE'
+    AND wt.archived_at IS NULL;
+end note
+activate TransactionService
+
+alt #E2F0D9 Успешный расчет
+    TransactionService --> IndividualsAPI : 3 Комиссия, токен операции
+    deactivate TransactionService
+
+    IndividualsAPI --> Client : 4 Рассчитанные параметры и id транзакции
+    deactivate IndividualsAPI
+    note left
+      {
+        "token": "AJASDLKJAS"
+      }
+    end note
+
+else #FCE4D6 Ошибка (Кошелек заблокирован / Валюта не поддерживается)
+    activate TransactionService #Pink
+    TransactionService --> IndividualsAPI : 3a Ошибка (Кошелек недоступен)
+    deactivate TransactionService
+
+    IndividualsAPI --> Client : 4a HTTP 400 / 403 (Операция отклонена)
+    deactivate IndividualsAPI
+end
+
+== 2. Пополнение (Deposit): Подтверждение ==
+
+Client -> IndividualsAPI : 5 POST /transactions/{transactionId}/confirm
+activate IndividualsAPI
+note left
+  {
+    "token": 123
+  }
+end note
+
+IndividualsAPI -> TransactionService : 6 Валидация операции и токена. Проверка статуса кошелька
+activate TransactionService
+
+alt #E2F0D9 Токен валиден и кошелёк активен
+
+    TransactionService -> TransactionDB : 7 Атомарная транзакция: SELECT FOR UPDATE, INSERT транзакции и outbox (БАЛАНС НЕ МЕНЯЕТСЯ)
+    activate TransactionDB
+    note over TransactionDB
+      **Одна атомарная транзакция (ACID):**
+
+      1. SELECT balance, status
+         FROM wallets
+         WHERE uid = :wallet_uid
+         FOR UPDATE;
+
+      2. Проверка статуса = 'ACTIVE' (иначе ROLLBACK и ошибка)
+
+      3. INSERT INTO transactions
+         (uid, created_at, modified_at, user_uid, wallet_uid,
+          amount, type, status, comment, fee, target_wallet_uid,
+          payment_method_id, failure_reason)
+         VALUES (uuid_generate_v4(), now(), NULL, :user_uid, :wallet_uid,
+                 :amount, 'DEPOSIT', 'PENDING', :comment, :fee, NULL,
+                 :payment_method_id, NULL);
+
+      4. INSERT INTO outbox_messages
+         (status, event_type, payload)
+         VALUES ('NEW', 'DepositRequested',
+                 '{"transactionId": 123, "amount": 1000, "walletUid": "...", "userUid": 1000}');
+
+      COMMIT;
+    end note
+    deactivate TransactionDB
+
+    TransactionService --> IndividualsAPI : 8 HTTP 200 (Status: PENDING, transactionId: 123)
+    deactivate TransactionService
+
+    IndividualsAPI --> Client : 9 Ответ: PENDING, ID: 123
+    deactivate IndividualsAPI
+
+    == Асинхронная доставка событий (Polling Outbox) ==
+
+    loop Каждые N миллисекунд (по таймеру)
+        OutboxPublisher -> OutboxDB : 10 SELECT * FROM outbox_messages WHERE status = 'NEW' FOR UPDATE SKIP LOCKED
+        activate OutboxPublisher
+        activate OutboxDB
+        OutboxDB --> OutboxPublisher : Новые сообщения
+        deactivate OutboxDB
+
+        alt Новые сообщения найдены
+            OutboxPublisher -> KafkaTopic : 11 Публикация события 'DepositRequested'
+            activate KafkaTopic
+
+            alt Успешная отправка в Kafka
+                KafkaTopic --> OutboxPublisher : Подтверждение (ACK)
+                deactivate KafkaTopic
+
+                OutboxPublisher -> OutboxDB : 12 UPDATE outbox_messages SET status = 'PROCESSED'
+                activate OutboxDB
+                deactivate OutboxDB
+
+            else Ошибка отправки (Kafka недоступна / таймаут)
+                KafkaTopic --X OutboxPublisher : Ошибка (Error / Timeout)
+
+                OutboxPublisher -> OutboxDB : 12 UPDATE outbox_messages SET status = 'FAILED', error_reason = 'Kafka unavailable'
+                activate OutboxDB
+                deactivate OutboxDB
+            end
+        end
+        deactivate OutboxPublisher
+    end
+
+else #FCE4D6 Токен истек или невалиден, или кошелёк заблокирован
+    activate TransactionService #Pink
+    TransactionService --> IndividualsAPI : 7a HTTP 400 (Token Expired / Invalid или Wallet blocked)
+    deactivate TransactionService
+
+    IndividualsAPI --> Client : 8a Ответ: Ошибка активации токена или кошелёк недоступен
+    deactivate IndividualsAPI
+end
+
+== 3. Асинхронная обработка платежа внешней системой ==
+
+alt #E2F0D9 Деньги успешно зачислены снаружи
+    KafkaTopic -> TransactionService : 13 Событие 'DepositCompleted'
+    activate TransactionService
+
+    TransactionService -> TransactionDB : 14 Атомарное обновление баланса и статуса транзакции
+    activate TransactionDB
+    note over TransactionDB
+      **Транзакция:**
+      Проверка, что status=="ACTIVE" (иначе rollback и ошибка)
+
+      1. SELECT balance, status
+         FROM wallets
+         WHERE uid = :wallet_uid
+         FOR UPDATE;
+
+      2. UPDATE wallets
+         SET balance = balance + :amount,
+             modified_at = now()
+         WHERE uid = :wallet_uid;
+
+      3. UPDATE transactions
+         SET status = 'COMPLETED',
+             modified_at = now()
+         WHERE uid = :transactionId
+           AND status = 'PENDING';
+
+      COMMIT;
+    end note
+    deactivate TransactionDB
+
+    deactivate TransactionService
+
+else #FCE4D6 Ошибка проведения платежа снаружи
+    KafkaTopic -> TransactionService : 13 Событие 'DepositFailed'
+    activate TransactionService
+
+    TransactionService -> TransactionDB : 14 Атомарная транзакция: обновление статуса на FAILED (баланс НЕ трогаем)
+    activate TransactionDB
+    note over TransactionDB
+      **Транзакция (баланс не изменяется):**
+
+      1. UPDATE transactions
+         SET status = 'FAILED',
+             modified_at = now(),
+             failure_reason = 'Gateway business error'
+         WHERE uid = :transactionId
+           AND status = 'PENDING';
+
+      COMMIT;
+    end note
+    deactivate TransactionDB
+
+    deactivate TransactionService
+end
+
+== 4. Проверка статуса ==
+
+Client -> IndividualsAPI: 15 GET /transactions/{transactionId}/status
+activate IndividualsAPI
+
+IndividualsAPI -> TransactionService : 16 Запрос на получение статуса
+activate TransactionService
+
+alt #E2F0D9 Транзакция успешна
+    TransactionService --> IndividualsAPI : HTTP 200 (Status: COMPLETED)
+    activate TransactionService #LightGreen
+    deactivate TransactionService
+
+    IndividualsAPI --> Client: Ответ: COMPLETED
+
+else #FCE4D6 Транзакция отклонена / произошел сбой
+    TransactionService --> IndividualsAPI : HTTP 200 (Status: FAILED)
+    activate TransactionService #Pink
+    deactivate TransactionService
+
+    IndividualsAPI --> Client: Ответ: FAILED
+end
+
+deactivate TransactionService
+deactivate IndividualsAPI
+
+@enduml
