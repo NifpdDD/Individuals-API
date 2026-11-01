@@ -50,7 +50,6 @@ logging:
   pattern:
     dateformat: "yyyy-MM-dd'T'HH:mm:ss.SSSX"
   level:
-    org.springframework.kafka.support.serializer: DEBUG
     root: INFO
     transaction_service: INFO
     org.apache.kafka: WARN
@@ -69,16 +68,16 @@ management:
   tracing:
     sampling:
       probability: 1.0
+
+  # Единый блок OpenTelemetry для Spring Boot 4
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          # 1. Меняем дефолтный порт на 4317 и убираем путь /v1/traces (gRPC требует только хост:порт)
+          endpoint: ${OTLP_EXPORTER_ENDPOINT:http://localhost:4317}
+          transport: grpc
+
+
 server:
   port: 8099
-
-otel:
-  exporter:
-    otlp:
-      endpoint:
-        ${OTLP_EXPORTER_ENDPOINT:http://localhost:4318}
-      protocol: http/protobuf
-  logs:
-    exporter: none
-  metrics:
-    exporter: none
